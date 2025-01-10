@@ -1,0 +1,9 @@
+# cache
+*__pycache__
+
+# editor
+.DS_Store
+
+# notebooks
+.ipynb_checkpoints
+*.ipynb
