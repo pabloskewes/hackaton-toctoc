@@ -3,6 +3,11 @@ from typing import Optional, Any
 
 import requests
 from pydantic import BaseModel
+from openinference.semconv.trace import OpenInferenceSpanKindValues, SpanAttributes
+
+from toctoc.tracing import TracerProvider
+
+TRACER = TracerProvider.get_tracer("toctoc-test")
 
 
 class ChatMessage(BaseModel):
@@ -111,15 +116,39 @@ class OpenAIClient:
         Returns:
             dict: The API response as a dictionary.
         """
-        payload = {
-            "model": model,
-            "messages": [msg.model_dump() for msg in messages],
-            "functions": [fn.model_dump() for fn in functions],
-            "temperature": temperature,
-        }
-        response = self._send_request(payload)
-        function_call = response.get("choices")[0].get("message").get("function_call")
-        return FunctionCallOutput(
-            function_name=function_call.get("name"),
-            arguments=json.loads(function_call.get("arguments")),
-        )
+        with TRACER.start_as_current_span("FunctionCall") as span:
+            payload = {
+                "model": model,
+                "messages": [msg.model_dump() for msg in messages],
+                "functions": [fn.model_dump() for fn in functions],
+                "temperature": temperature,
+            }
+
+            span.set_attributes(
+                {
+                    SpanAttributes.OPENINFERENCE_SPAN_KIND: OpenInferenceSpanKindValues.CHAIN.value,
+                    SpanAttributes.LLM_FUNCTION_CALL: json.dumps(
+                        payload.get("functions")
+                    ),
+                }
+            )
+            response = self._send_request(payload)
+            function_call = (
+                response.get("choices")[0].get("message").get("function_call")
+            )
+            output = FunctionCallOutput(
+                function_name=function_call.get("name"),
+                arguments=json.loads(function_call.get("arguments")),
+            )
+            span.set_attributes(
+                {
+                    SpanAttributes.OUTPUT_VALUE: json.dumps(output.dict()),
+                    SpanAttributes.LLM_INVOCATION_PARAMETERS: json.dumps(
+                        {
+                            "model": model,
+                            "temperature": temperature,
+                        }
+                    ),
+                }
+            )
+            return output

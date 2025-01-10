@@ -1,5 +1,6 @@
 import logging
 from typing import Optional
+from threading import Lock
 
 from phoenix.config import get_env_host, get_env_port
 from openinference.semconv.resource import ResourceAttributes
@@ -39,3 +40,37 @@ def setup_tracer(
 
     LOGGER.info(f"Tracer setup with collector endpoint: {collector_endpoint}")
     return tracer
+
+
+class TracerProvider:
+    """
+    A singleton class to manage the creation and retrieval of a tracer instance.
+
+    Attributes:
+        _instance (Optional[trace_api.Tracer]): The singleton tracer instance.
+        _lock (Lock): A lock to ensure thread-safe initialization.
+    """
+
+    _instance: Optional[trace_api.Tracer] = None
+    _lock = Lock()
+
+    @classmethod
+    def get_tracer(
+        cls, project_name: str, collector_endpoint: Optional[str] = None
+    ) -> trace_api.Tracer:
+        """
+        Get or create a singleton tracer instance.
+
+        Args:
+            project_name (str): The name of the project for the tracer.
+            collector_endpoint (Optional[str]): The endpoint for the trace collector.
+                Defaults to using environment variables if not provided.
+
+        Returns:
+            trace_api.Tracer: The singleton tracer instance.
+        """
+        if cls._instance is None:
+            with cls._lock:
+                if cls._instance is None:  # Double-checked locking
+                    cls._instance = setup_tracer(project_name, collector_endpoint)
+        return cls._instance
