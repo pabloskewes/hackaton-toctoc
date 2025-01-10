@@ -132,18 +132,25 @@ class PropertySearchAssitant(Chatbot):
             model="gpt-4-turbo-preview",
             messages=self.get_history(),
         )
-        self.add_message("assistant", response.content)
-        print(response)
         parsed_response = json.loads(response.content)
         message = parsed_response.get("message")
         finished = parsed_response.get("finished")
 
+        print(f"{type(message)=}, {type(finished)=}")
+        self.add_message("assistant", message)
+
+        assert isinstance(message, str), "The response message must be a string."
+        assert isinstance(finished, bool), "The finished flag must be a boolean."
+
         last_user_message = next(
             (msg for msg in self.get_history()[::-1] if msg.role == "user"), None
         )
-        output = {"input": last_user_message, "output": message}
+        print(f"{last_user_message=}")
+        print(f"{type(last_user_message)=}")
+        output = {"input": last_user_message.content, "output": message}
 
         if finished:
+            print("Finished collecting property preferences.")
             # self.clear_history()
             self.add_message("system", JSON_RESPONSE_PROMPT_TEMPLATE)
             final_response = self._client.completion(
@@ -167,5 +174,4 @@ if __name__ == "__main__":
         "user", "Quiero una casa en Santiago con 3 habitaciones y 2 baños."
     )
     output = chatbot.run()
-    response = json.loads(output.get("output"))
-    print(response)
+    print(output)
