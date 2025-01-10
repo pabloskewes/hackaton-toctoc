@@ -1,6 +1,7 @@
-import requests
 from typing import Optional, Dict, Any, List, TypedDict
 from dataclasses import dataclass
+
+import requests
 
 
 @dataclass

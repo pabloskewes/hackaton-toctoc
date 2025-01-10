@@ -152,3 +152,52 @@ class OpenAIClient:
                 }
             )
             return output
+
+    def completion(
+        self,
+        model: str,
+        messages: list[ChatMessage],
+        temperature: float = 0.7,
+    ) -> ChatMessage:
+        """
+        Generates a chatbot response for the given list of messages using the ChatMessage model.
+
+        Args:
+            messages (list[ChatMessage]): A list of messages in the conversation.
+            model (str): The model to use for the response. Defaults to "gpt-3.5-turbo".
+            temperature (float): Sampling temperature. Defaults to 0.7.
+
+        Returns:
+            ChatMessage: The chatbot's response as a ChatMessage instance.
+        """
+        with TRACER.start_as_current_span("ChatCompletion") as span:
+            payload = {
+                "model": model,
+                "messages": [msg.model_dump() for msg in messages],
+                "temperature": temperature,
+            }
+
+            response = self._send_request(payload)
+            assistant_response = response["choices"][0]["message"]
+            bot_message = ChatMessage(
+                role=assistant_response["role"],
+                content=assistant_response["content"],
+            )
+            last_user_message = next(
+                (msg for msg in messages[::-1] if msg.role == "user"), None
+            )
+
+            span.set_attributes(
+                {
+                    SpanAttributes.OPENINFERENCE_SPAN_KIND: OpenInferenceSpanKindValues.LLM.value,
+                    SpanAttributes.OUTPUT_VALUE: bot_message.content,
+                    SpanAttributes.LLM_INVOCATION_PARAMETERS: json.dumps(
+                        {
+                            "model": model,
+                            "temperature": temperature,
+                        }
+                    ),
+                    SpanAttributes.INPUT_VALUE: last_user_message.content,
+                }
+            )
+            return bot_message

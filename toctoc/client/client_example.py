@@ -1,9 +1,13 @@
-from api_client import TocTocApiClient, PropertyDetails
+import os
+
+from dotenv import load_dotenv
+
+from toctoc.client.api_client import TocTocApiClient, PropertyDetails
 
 
 def main():
-    # Initialize the client with your access token
-    access_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkdlcmFyZG8gTXXDsW96IiwiaWF0IjoxNTE2MjM5MDIyLCJ1c2VyX2lkIjoiMTIzNCJ9.FpthiZ_xC_U0RlVnlvR-axVKCmUVoN200VXJ6FD8mAU"
+    load_dotenv()
+    access_token = os.getenv("TOCTOC_TOKEN")
     client = TocTocApiClient(access_token)
 
     try:
