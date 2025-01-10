@@ -1,5 +1,5 @@
 import requests
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List, TypedDict
 from dataclasses import dataclass
 
 
@@ -17,6 +17,61 @@ class PropertyDetails:
     warehouse: Optional[int] = None
     common_expense: Optional[float] = None
     role: Optional[str] = None
+
+
+@dataclass
+class RegisterReference:
+    register_commune: int
+    register_block: int
+    register_site: int
+    register_commune_common_property: int
+    register_block_common_property: int
+    register_site_common_property: int
+
+
+@dataclass
+class Address:
+    name_commune: str
+    id_commune: int
+    region: int
+    street: str
+
+
+@dataclass
+class Finances:
+    fiscal_appraisal: float
+    semiannual_contribution: float
+    exempt_appraisal: float
+
+
+@dataclass
+class Information:
+    total_area: float
+    area_of_construction_line: float
+    min_year_of_construction: int
+    max_year_of_construction: int
+
+
+@dataclass
+class HousingType:
+    housing_type_name: str
+    housing_type_code: str
+    housing_type_id: int
+
+
+@dataclass
+class Location:
+    coordinates: List[float]
+
+
+@dataclass
+class RoleInformation:
+    register_reference: RegisterReference
+    address: Address
+    finances: Finances
+    information: Information
+    housing_type: HousingType
+    location: Location
 
 
 class TocTocApiClient:
@@ -101,3 +156,91 @@ class TocTocApiClient:
     def close(self) -> None:
         """Close the session when done."""
         self.session.close()
+
+    def get_role_information(self, role: str, id_commune: int) -> RoleInformation:
+        """Get detailed information for a specific role and commune.
+
+        Args:
+            role (str): The role identifier (e.g., "1234-22")
+            id_commune (int): The commune identifier
+
+        Returns:
+            RoleInformation: Detailed information about the property
+
+        Raises:
+            requests.exceptions.RequestException: If the API request fails
+        """
+        params = {"role": role, "idCommune": id_commune}
+        response = self.call_endpoint("/info/role", params=params)
+        data = response["data"]
+
+        return RoleInformation(
+            register_reference=RegisterReference(
+                register_commune=data["registerReference"]["registerCommune"],
+                register_block=data["registerReference"]["registerBlock"],
+                register_site=data["registerReference"]["registerSite"],
+                register_commune_common_property=data["registerReference"][
+                    "registerCommuneCommonProperty"
+                ],
+                register_block_common_property=data["registerReference"][
+                    "registerBlockCommonProperty"
+                ],
+                register_site_common_property=data["registerReference"][
+                    "registerSiteCommonProperty"
+                ],
+            ),
+            address=Address(
+                name_commune=data["address"]["nameCommune"],
+                id_commune=data["address"]["idCommune"],
+                region=data["address"]["region"],
+                street=data["address"]["street"],
+            ),
+            finances=Finances(
+                fiscal_appraisal=data["finances"]["fiscalAppraisal"],
+                semiannual_contribution=data["finances"]["semiannualContribution"],
+                exempt_appraisal=data["finances"]["exemptAppraisal"],
+            ),
+            information=Information(
+                total_area=data["information"]["totalArea"],
+                area_of_construction_line=data["information"]["areaofConstructionLine"],
+                min_year_of_construction=data["information"]["minYearofConstruction"],
+                max_year_of_construction=data["information"]["maxYearofConstruction"],
+            ),
+            housing_type=HousingType(
+                housing_type_name=data["housingType"]["housingTypeName"],
+                housing_type_code=data["housingType"]["housingTypeCode"],
+                housing_type_id=data["housingType"]["housingTypeId"],
+            ),
+            location=Location(coordinates=data["location"]["coordinates"]),
+        )
+
+    def call_endpoint(
+        self,
+        endpoint: str,
+        method: str = "GET",
+        params: Optional[Dict[str, Any]] = None,
+        data: Optional[Dict[str, Any]] = None,
+    ) -> Dict[Any, Any]:
+        """Make a generic API call to any endpoint.
+
+        Args:
+            endpoint (str): The API endpoint path (e.g., "/info/role")
+            method (str): HTTP method to use (GET, POST, PUT, etc.)
+            params (Optional[Dict[str, Any]]): Query parameters
+            data (Optional[Dict[str, Any]]): Request body data for POST/PUT requests
+
+        Returns:
+            Dict[Any, Any]: API response data
+
+        Raises:
+            requests.exceptions.RequestException: If the API request fails
+        """
+        url = f"{self.BASE_URL}{endpoint}"
+        response = self.session.request(
+            method=method.upper(),
+            url=url,
+            params=params,
+            json=data,
+        )
+        response.raise_for_status()
+        return response.json()
