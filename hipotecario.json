@@ -1,0 +1,58 @@
+{
+  "search": "Quiero solicitar un crédito hipotecario",
+  "customResponse": "",
+  "intent": "Financiar",
+  "workflow": "Hipotecario",
+  "response": [
+    {
+      "key": "borrowerInfo.monthlyIncome",
+      "value": ""
+    },
+    {
+      "key": "mortgageDetails.propertyValue",
+      "value": ""
+    },
+    {
+      "key": "mortgageDetails.requestedAmount",
+      "value": ""
+    },
+    {
+      "key": "mortgageDetails.downPayment",
+      "value": ""
+    },
+    {
+      "key": "mortgageDetails.term",
+      "value": ""
+    },
+    {
+      "key": "mortgageDetails.propertyType",
+      "value": ""
+    }
+  ],
+  "questions": [
+    {
+      "Key": "borrowerInfo.monthlyIncome",
+      "value": true
+    },
+    {
+      "key": "mortgageDetails.propertyvalue",
+      "value": true
+    },
+    {
+      "key": "mortgageDetails. requestedAmount",
+      "value": true
+    },
+    {
+      "key": "mortgageDetails.downPayment",
+      "value": true
+    },
+    {
+      "key": "mortgageDetails.term",
+      "value": true
+    },
+    {
+      "key": "mortgageDetails.propertyType",
+      "value": true
+    }
+  ]
+}

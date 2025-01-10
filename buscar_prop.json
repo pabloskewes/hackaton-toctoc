@@ -1,0 +1,106 @@
+{
+  "search": "Casa grande cerca de valpo",
+  "customResponse": "",
+  "intent": "Buscar propiedad",
+  "workflow": "Buscar",
+  "response": [
+    {
+      "key": "commune",
+      "value": "Valparaiso"
+    },
+    {
+      "key": "region",
+      "value": "Valparaiso"
+    },
+    {
+      "key": "type0fProperty",
+      "value": "Casa"
+    },
+    {
+      "key": "type0fOperation",
+      "value": "Nueva"
+    },
+    {
+      "key": "bedrooms",
+      "value": "2"
+    },
+    {
+      "key": "bathrooms",
+      "value": "2"
+    },
+    {
+      "key": "parking",
+      "value": "1"
+    },
+    {
+      "key": "storage",
+      "value": "1"
+    },
+    {
+      "key": "area",
+      "value": "200"
+    },
+    {
+      "key": "priceMax",
+      "value": "4000"
+    },
+    {
+      "key": "priceMin",
+      "value": "2000"
+    },
+    {
+      "key": "petFriendly",
+      "value": "1"
+    }
+  ],
+  "questions": [
+    {
+      "key": "commune",
+      "value": true
+    },
+    {
+      "key": "region",
+      "value": true
+    },
+    {
+      "key": "typeofProperty",
+      "value": true
+    },
+    {
+      "key": "typeOfOperation",
+      "value": true
+    },
+    {
+      "key": "bedrooms",
+      "value": true
+    },
+    {
+      "key": "bathrooms",
+      "value": true
+    },
+    {
+      "key": "parking",
+      "value": true
+    },
+    {
+      "key": "storage",
+      "value": true
+    },
+    {
+      "key": "area",
+      "value": true
+    },
+    {
+      "key": "priceMax",
+      "value": true
+    },
+    {
+      "key": "priceMin",
+      "value": true
+    },
+    {
+      "key": "petFriendly",
+      "value": true
+    }
+  ]
+}
