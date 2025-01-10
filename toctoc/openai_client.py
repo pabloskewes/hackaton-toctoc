@@ -133,9 +133,15 @@ class OpenAIClient:
                 }
             )
             response = self._send_request(payload)
+            # from pprint import pformat
+
+            # print(f"Function call response: {pformat(response)}")
             function_call = (
                 response.get("choices")[0].get("message").get("function_call")
             )
+            if not function_call:
+                # use first
+                return FunctionCallOutput(function_name=functions[0].name, arguments={})
             output = FunctionCallOutput(
                 function_name=function_call.get("name"),
                 arguments=json.loads(function_call.get("arguments")),

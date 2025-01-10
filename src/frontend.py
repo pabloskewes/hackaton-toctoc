@@ -1,5 +1,10 @@
 import openai
+import os
+from dotenv import load_dotenv
 import gradio as gr
+from toctoc.openai_client import OpenAIClient, ChatMessage
+
+load_dotenv()
 
 openai.api_key = ""
 
@@ -75,33 +80,64 @@ El JSON debe incluir los siguientes campos: \n   - lat (latitud de la ubicación
 6. Al final, confirma con el cliente que toda la información está completa y precisa antes de enviar la solicitud de tasación. 
 Si es necesario, permite que el cliente realice ajustes antes de enviar los datos."""
 
+TEMPLATE_INTENTION = (
+    "Selecciona una herramienta para realizar una acción específica. "
+    "Elige entre las siguientes opciones y responde únicamente con el nombre de la herramienta:\n\n"
+    "1. `buscar_propiedades`: Para buscar propiedades disponibles en una ubicación específica.\n"
+    "2. `valorar_propiedad`: Para estimar el valor de una propiedad.\n"
+    "3. `simular_credito_hipotecario`: Para simular un crédito hipotecario y resolver dudas sobre cómo pagar una propiedad.\n\n"
+    "Responde solo con el nombre exacto de la herramienta: `buscar_propiedades`, `valorar_propiedad` o `simular_credito_hipotecario`."
+)
+
 
 # Inicializar mensajes
 messages = []
+client = OpenAIClient(os.getenv("OPENAI_API_KEY"))
 
-def CustomChatGPT(user_input, template_choice):
+
+def CustomChatGPT(user_input):
     global messages
+
     if not messages:  # Añadir la plantilla inicial solo la primera vez
-        if template_choice == "BUSQUEDA":
+
+        response = client.completion(
+            model="gpt-4-0613",
+            messages=[
+                ChatMessage(
+                    role="system",
+                    content=TEMPLATE_INTENTION,
+                ),
+                ChatMessage(
+                    role="user",
+                    content=user_input,
+                ),
+            ],
+            temperature=1.0,
+        )
+        template_choice = response.content
+        if template_choice == "buscar_propiedades":
             messages.append({"role": "system", "content": BUSQUEDA})
-        elif template_choice == "HIPOTECARIO":
+        elif template_choice == "simular_credito_hipotecario":
             messages.append({"role": "system", "content": HIPOTECARIO})
-        elif template_choice == "TASAR":
+        elif template_choice == "valorar_propiedad":
             messages.append({"role": "system", "content": TASAR})
-        elif template_choice == "BASE":
-            messages.append({"role": "system", "content": BASE})
+        # elif template_choice == "BASE":
+        #     messages.append({"role": "system", "content": BASE})
 
     # Añadir entrada del usuario
     messages.append({"role": "user", "content": user_input})
 
     # Llamar al modelo de OpenAI
     try:
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=messages
+        # response = openai.ChatCompletion.create(
+        #     model="gpt-3.5-turbo", messages=messages
+        # )
+        # ChatGPT_reply = response["choices"][0]["message"]["content"]
+        response = client.completion(
+            model="gpt-4-0613",
+            messages=[ChatMessage(**msg) for msg in messages],
         )
-        ChatGPT_reply = response["choices"][0]["message"]["content"]
-        messages.append({"role": "assistant", "content": ChatGPT_reply})
+        messages.append({"role": response.role, "content": response.content})
 
         # Construir historial en formato HTML
         chat_history = ""
@@ -109,12 +145,15 @@ def CustomChatGPT(user_input, template_choice):
             if msg["role"] == "user":
                 chat_history += f"<p><strong>👤 Usuario:</strong> {msg['content']}</p>"
             elif msg["role"] == "assistant":
-                chat_history += f"<p><strong>🤖 TocToc IA:</strong> {msg['content']}</p>"
+                chat_history += (
+                    f"<p><strong>🤖 TocToc IA:</strong> {msg['content']}</p>"
+                )
 
         # Agregar un contenedor para que JavaScript haga scroll
         return f"<div id='chat-history-container'>{chat_history}</div>", ""
     except Exception as e:
         return f"<p>Error en la comunicación con OpenAI: {str(e)}</p>", ""
+
 
 # CSS personalizado
 css = """
@@ -186,32 +225,33 @@ with gr.Blocks(css=css) as demo:
 
     # Menú
     gr.Markdown(
-        "<div id='menu-bar'>Inicio | Servicios | Contacto | Ayuda</div>", elem_id="menu-bar"
+        "<div id='menu-bar'>Inicio | Servicios | Contacto | Ayuda</div>",
+        elem_id="menu-bar",
     )
 
     # Contenedor principal
     with gr.Column(elem_id="chat-container"):
         chat_history = gr.HTML(
             value="<div id='chat-history-container'><p>El historial aparecerá aquí.</p></div>",  # Contenedor inicial con mensaje
-            elem_id="chat-history-container"
+            elem_id="chat-history-container",
         )
         user_input = gr.Textbox(
-            placeholder="Escribe tu mensaje...", 
-            label="Tu Mensaje", 
-            lines=3, 
-            elem_id="user-input"
+            placeholder="Escribe tu mensaje...",
+            label="Tu Mensaje",
+            lines=3,
+            elem_id="user-input",
         )
-        template_dropdown = gr.Dropdown(
-            ["BASE", "BUSQUEDA", "HIPOTECARIO", "TASAR"], 
-            label="Selecciona una plantilla",
-            value="BASE",
-            elem_id="template-dropdown"
-        )
+        # template_dropdown = gr.Dropdown(
+        #     ["BASE", "BUSQUEDA", "HIPOTECARIO", "TASAR"],
+        #     label="Selecciona una plantilla",
+        #     value="BASE",
+        #     elem_id="template-dropdown",
+        # )
         send_button = gr.Button("Enviar", elem_id="send-button")
         send_button.click(
-            CustomChatGPT, 
-            inputs=[user_input, template_dropdown], 
-            outputs=[chat_history, user_input]  # Limpia el cuadro de entrada
+            CustomChatGPT,
+            inputs=[user_input],
+            outputs=[chat_history, user_input],  # Limpia el cuadro de entrada
         )
 
 # Incluir JavaScript para el autoscroll
@@ -226,4 +266,4 @@ scroll_script = """
     setInterval(scrollToBottom, 100); // Revisa el scroll cada 100ms
 </script>
 """
-demo.launch(share=True) + scroll_script
+demo.launch(share=False) + scroll_script
